@@ -6,6 +6,24 @@ A collection of PowerShell maintenance scripts for cleaning up development envir
 
 This repository contains automated cleanup scripts designed to help developers reclaim disk space by removing caches, old artifacts, and unused resources. All scripts are interactive, safe to run, and provide clear feedback about what they're doing.
 
+## 🎯 Quick Start - Interactive Menu
+
+**NEW!** Use the interactive TUI menu for a guided experience:
+
+```powershell
+pwsh Start-MaintenanceMenu.ps1
+```
+
+The menu allows you to:
+- ✨ **Select which scripts to run** - Enable/disable entire cleanup scripts
+- 🎛️ **Configure individual steps** - Toggle specific steps within each script
+- 📁 **Choose directories** - Pick which project folders to scan for build artifacts
+- 🚀 **Run everything at once** - Execute all selected scripts in sequence
+
+**This is the recommended way to use these maintenance scripts!**
+
+---
+
 ## Scripts
 
 ### 🧹 Development Caches Cleanup
@@ -124,6 +142,106 @@ pwsh scripts/powershell/maintenance/cleanup-sql-server.ps1
 
 ---
 
+## 🎮 Using the Interactive Menu
+
+### Features
+
+The `Start-MaintenanceMenu.ps1` script provides a comprehensive TUI (Text User Interface) for managing all maintenance scripts from one place:
+
+#### Main Menu
+- View all available scripts with enable/disable status
+- Toggle scripts on/off
+- Configure individual script steps
+- Run all selected scripts in sequence
+
+#### Script Configuration
+Each script can be configured with granular control:
+
+**Development Caches Cleanup:**
+- Toggle individual cache types (NuGet, Build Artifacts, IDE, VSCode, Node.js, Temp)
+- Add/remove project directories for build artifact scanning
+- Configure which folders to search for obj/bin folders
+
+**Docker Cleanup:**
+- Enable/disable Docker system prune
+- Enable/disable VHDX shrinking
+
+**.NET SDK Manager:**
+- Toggle SDK listing
+- Enable/disable EOL version removal
+- Enable/disable older patch version removal
+
+**SQL Server Cleanup:**
+- Runs the full script (due to complexity)
+- Option to skip if not needed
+
+### Menu Navigation
+
+```
+Main Menu:
+  1-4   : Quick toggle script enable/disable
+  T     : Toggle script menu (select which script to toggle)
+  C     : Configure script steps (detailed configuration)
+  R     : Run all enabled scripts
+  Q     : Quit
+
+Script Configuration Menu:
+  1-N   : Toggle individual steps
+  E     : Enable all steps
+  N     : Disable all steps
+  A     : Add directory (DevCaches only)
+  D     : Remove directory (DevCaches only)
+  B     : Back to main menu
+```
+
+### Directory Picker
+
+When configuring project directories for build artifacts:
+1. **Add Directory** - Add custom paths to scan
+2. **Remove Directory** - Remove paths from the scan list
+3. **Browse Locations** - Quick access to common project folders:
+   - Visual Studio Projects (`%USERPROFILE%\source\repos`)
+   - Projects Folder (`%USERPROFILE%\Projects`)
+   - Custom locations (C:\projekty, etc.)
+
+The menu shows which directories exist with a ✓ or ✗ indicator.
+
+### Example Workflow
+
+1. **Start the menu:**
+   ```powershell
+   pwsh Start-MaintenanceMenu.ps1
+   ```
+
+2. **Configure which scripts to run:**
+   - Press `T` to toggle scripts on/off
+   - Or press `1-4` to quickly toggle individual scripts
+
+3. **Configure script steps:**
+   - Press `C` to configure
+   - Select a script (e.g., `1` for Dev Caches)
+   - Toggle specific steps (e.g., disable Temp files cleanup)
+   - For DevCaches, add/remove project directories as needed
+
+4. **Run everything:**
+   - Press `R` to start execution
+   - Confirm when prompted
+   - Watch as each script runs with your configuration
+
+5. **Review results:**
+   - Each script shows space freed
+   - Final summary at the end
+
+### Tips
+
+- **Save time:** Configure once, then run all scripts together
+- **Customize:** Only run the steps you need
+- **Safe:** Each script still asks for confirmation before removing files
+- **Flexible:** Change configuration between runs
+- **Visual:** Color-coded interface shows status clearly
+
+---
+
 ## Prerequisites
 
 ### Required
@@ -156,13 +274,25 @@ If not installed, get it from: https://github.com/PowerShell/PowerShell
 
 All scripts are designed to run interactively with confirmations before destructive operations.
 
-### Running a Script
+### Option 1: Interactive Menu (Recommended)
 
 ```powershell
 # Navigate to repository
 cd utilities
 
-# Run any script
+# Run the interactive menu
+pwsh Start-MaintenanceMenu.ps1
+```
+
+This provides a guided interface to select scripts, configure steps, and run everything from one place. See the [Using the Interactive Menu](#-using-the-interactive-menu) section for details.
+
+### Option 2: Run Individual Scripts
+
+```powershell
+# Navigate to repository
+cd utilities
+
+# Run any script directly
 pwsh scripts/powershell/maintenance/<script-name>.ps1
 ```
 
@@ -188,7 +318,19 @@ All scripts are designed with safety in mind:
 
 ### Quick Cleanup Routine
 
-Run these in order for a comprehensive cleanup:
+**Using the Interactive Menu (Easiest):**
+
+```powershell
+# Run the menu, select all scripts, and execute
+pwsh Start-MaintenanceMenu.ps1
+
+# Follow the prompts:
+# 1. Press 'R' to run all scripts
+# 2. Or press 'C' to configure specific steps first
+# 3. Confirm when ready
+```
+
+**Running Scripts Individually:**
 
 ```powershell
 # 1. Clean development caches (usually the biggest)
@@ -264,6 +406,7 @@ See [AGENTS.md](AGENTS.md) for detailed development guidelines.
 utilities/
 ├── README.md                                    # This file
 ├── AGENTS.md                                    # Development guidelines for AI agents
+├── Start-MaintenanceMenu.ps1                   # Interactive TUI menu (main entrypoint)
 └── scripts/
     └── powershell/
         └── maintenance/
@@ -295,4 +438,4 @@ For issues or questions:
 
 ---
 
-**Tip:** Add these scripts to Task Scheduler for automatic monthly cleanups, or create a wrapper script that runs all of them in sequence!
+**Tip:** Use `Start-MaintenanceMenu.ps1` as your one-stop solution for all maintenance tasks! You can also add it to Task Scheduler for automatic monthly cleanups.
