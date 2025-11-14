@@ -8,7 +8,7 @@ This repository contains automated cleanup scripts designed to help developers r
 
 ## 🎯 Quick Start - Interactive Menu
 
-**NEW!** Use the interactive TUI menu for a guided experience:
+**NEW!** Use the interactive TUI menu powered by **Spectre.Console** for a beautiful, guided experience:
 
 ```powershell
 pwsh Start-MaintenanceMenu.ps1
@@ -21,6 +21,8 @@ The menu allows you to:
 - 🚀 **Run everything at once** - Execute all selected scripts in sequence
 
 **This is the recommended way to use these maintenance scripts!**
+
+> **Note:** The menu uses the `PwshSpectreConsole` module, which will be automatically installed on first run if not present.
 
 ---
 
@@ -146,7 +148,14 @@ pwsh scripts/powershell/maintenance/cleanup-sql-server.ps1
 
 ### Features
 
-The `Start-MaintenanceMenu.ps1` script provides a comprehensive TUI (Text User Interface) for managing all maintenance scripts from one place:
+The `Start-MaintenanceMenu.ps1` script provides a beautiful, modern TUI (Text User Interface) powered by **Spectre.Console** for managing all maintenance scripts from one place:
+
+**Why Spectre.Console?**
+- 🎨 Modern, colorful interface with rich formatting
+- 📦 Well-maintained open-source library
+- ⚡ Built-in multi-select menus and prompts
+- 🔧 Much easier to maintain (413 lines vs 972 lines of custom code)
+- 🚀 Auto-installs on first run
 
 #### Main Menu
 - View all available scripts with enable/disable status
@@ -177,34 +186,38 @@ Each script can be configured with granular control:
 
 ### Menu Navigation
 
-```
-Main Menu:
-  1-4   : Quick toggle script enable/disable
-  T     : Toggle script menu (select which script to toggle)
-  C     : Configure script steps (detailed configuration)
-  R     : Run all enabled scripts
-  Q     : Quit
+The menu uses **arrow keys** and **interactive selections** (Spectre.Console):
 
-Script Configuration Menu:
-  1-N   : Toggle individual steps
-  E     : Enable all steps
-  N     : Disable all steps
-  A     : Add directory (DevCaches only)
-  D     : Remove directory (DevCaches only)
-  B     : Back to main menu
-```
+**Main Menu:**
+- Use ↑/↓ arrow keys to navigate
+- Press Enter to select:
+  - **Select Scripts to Run** - Multi-select which scripts to enable
+  - **Configure Script Steps** - Detailed step configuration
+  - **Run Selected Scripts** - Execute with confirmation
+  - **Exit** - Quit the menu
 
-### Directory Picker
+**Multi-Select Menus:**
+- Use ↑/↓ to navigate items
+- **Space** to toggle selection (✓/✗)
+- **Enter** to confirm
 
-When configuring project directories for build artifacts:
-1. **Add Directory** - Add custom paths to scan
-2. **Remove Directory** - Remove paths from the scan list
-3. **Browse Locations** - Quick access to common project folders:
-   - Visual Studio Projects (`%USERPROFILE%\source\repos`)
-   - Projects Folder (`%USERPROFILE%\Projects`)
-   - Custom locations (C:\projekty, etc.)
+**Script Configuration:**
+- Toggle individual steps on/off
+- Enable/disable all steps at once
+- Manage project directories (DevCaches only)
+- Interactive table showing directory status
 
-The menu shows which directories exist with a ✓ or ✗ indicator.
+### Directory Management
+
+When configuring project directories for build artifacts, the menu displays a **formatted table** showing:
+- **Status** - ✓ Exists or ✗ Not Found
+- **Path** - Full directory path
+
+**Actions:**
+1. **Add Directory** - Enter custom paths to scan
+2. **Remove Directory** - Select from list to remove
+
+The interactive table makes it easy to see which directories are valid at a glance.
 
 ### Example Workflow
 
@@ -213,32 +226,37 @@ The menu shows which directories exist with a ✓ or ✗ indicator.
    pwsh Start-MaintenanceMenu.ps1
    ```
 
-2. **Configure which scripts to run:**
-   - Press `T` to toggle scripts on/off
-   - Or press `1-4` to quickly toggle individual scripts
+2. **Select which scripts to run:**
+   - Navigate to "Select Scripts to Run"
+   - Use Space to toggle scripts (✓/✗)
+   - Press Enter to confirm
 
-3. **Configure script steps:**
-   - Press `C` to configure
-   - Select a script (e.g., `1` for Dev Caches)
-   - Toggle specific steps (e.g., disable Temp files cleanup)
-   - For DevCaches, add/remove project directories as needed
+3. **Configure script steps (optional):**
+   - Navigate to "Configure Script Steps"
+   - Choose a script to configure
+   - Select "Toggle Individual Steps"
+   - Use Space to toggle specific steps on/off
+   - For DevCaches, manage project directories via the table interface
 
 4. **Run everything:**
-   - Press `R` to start execution
-   - Confirm when prompted
+   - Navigate to "Run Selected Scripts"
+   - Review the summary of what will run
+   - Confirm to start execution
    - Watch as each script runs with your configuration
 
 5. **Review results:**
    - Each script shows space freed
-   - Final summary at the end
+   - Final completion message
 
 ### Tips
 
-- **Save time:** Configure once, then run all scripts together
+- **Modern UI:** Spectre.Console provides a beautiful, professional interface
+- **Easy Navigation:** Arrow keys and Space bar make it intuitive
+- **Save Time:** Configure once, then run all scripts together
 - **Customize:** Only run the steps you need
 - **Safe:** Each script still asks for confirmation before removing files
-- **Flexible:** Change configuration between runs
-- **Visual:** Color-coded interface shows status clearly
+- **Maintainable:** The menu script is now 57% smaller thanks to Spectre.Console
+- **Visual:** Rich formatting, tables, and color-coded status indicators
 
 ---
 
@@ -248,6 +266,10 @@ The menu shows which directories exist with a ✓ or ✗ indicator.
 - **Windows** 10/11 or Windows Server
 - **PowerShell** 7+ (pwsh)
 - **Administrator privileges** - All scripts require elevation
+
+### For Interactive Menu
+- **PwshSpectreConsole** module - Auto-installs on first run of `Start-MaintenanceMenu.ps1`
+- Or manually install: `Install-Module -Name PwshSpectreConsole -Scope CurrentUser`
 
 ### Optional (per script)
 - **Docker/Rancher Desktop** - for cleanup-docker.ps1
