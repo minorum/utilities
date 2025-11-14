@@ -20,14 +20,6 @@ function Get-FolderSize {
     return 0
 }
 
-function Show-Spinner {
-    param([string]$Message)
-    $spinChars = @('|', '/', '-', '\')
-    $spin = $spinChars[$script:spinIndex % 4]
-    $script:spinIndex++
-    Write-Host "`r  $Message $spin" -NoNewline -ForegroundColor Gray
-}
-
 function Remove-WithConfirm {
     param(
         [string]$Path,
@@ -42,10 +34,10 @@ function Remove-WithConfirm {
                 try {
                     Write-Host "  Removing..." -NoNewline -ForegroundColor Yellow
                     Remove-Item -Path $Path -Recurse -Force -ErrorAction Stop
-                    Write-Host "`r  ✓ Removed                    " -ForegroundColor Green
+                    Write-Host "`r  ✓ Removed      " -ForegroundColor Green
                     return $sizeBefore
                 } catch {
-                    Write-Host "`r  ✗ Failed: $_                 " -ForegroundColor Red
+                    Write-Host "`r  ✗ Failed: $_   " -ForegroundColor Red
                     return 0
                 }
             }
@@ -66,38 +58,37 @@ $totalFreed += Remove-WithConfirm -Path "$env:LOCALAPPDATA\NuGet\Cache" -Descrip
 Write-Host "`n[2] Build Artifacts (obj/bin folders)" -ForegroundColor Cyan
 $projectDirs = @("C:\projekty", "$env:USERPROFILE\source\repos", "$env:USERPROFILE\Projects")
 
-$script:spinIndex = 0
-Write-Host "  Scanning for obj/bin folders..." -NoNewline -ForegroundColor Gray
+Write-Host "  Scanning directories (this may take a moment)..." -ForegroundColor Gray
 
 $allObjBinFolders = @()
 foreach ($dir in $projectDirs) {
     if (Test-Path $dir) {
-        $found = Get-ChildItem -Path $dir -Directory -Recurse -Include "obj", "bin" -ErrorAction SilentlyContinue | ForEach-Object {
-            Show-Spinner "Scanning... found $($allObjBinFolders.Count)"
-            $_
-        }
-        $allObjBinFolders += @($found)
+        Write-Host "    - $dir" -ForegroundColor DarkGray
+        $found = @(Get-ChildItem -Path $dir -Directory -Recurse -Include "obj", "bin" -ErrorAction SilentlyContinue)
+        $allObjBinFolders += $found
+        Write-Host "      Found: $($found.Count) folders" -ForegroundColor DarkGray
     }
 }
 
-Write-Host "`r  ✓ Found $($allObjBinFolders.Count) folders                           " -ForegroundColor Green
+Write-Host "`n  Total found: $($allObjBinFolders.Count) folders" -ForegroundColor Green
 
 if ($allObjBinFolders.Count -gt 0) {
-    # Calculate total size with progress
-    Write-Host "  Calculating size..." -NoNewline -ForegroundColor Gray
-    $script:spinIndex = 0
+    # Calculate total size
+    Write-Host "  Calculating total size..." -ForegroundColor Gray
     $totalObjBinSize = 0
-    $processed = 0
+    $batches = [math]::Ceiling($allObjBinFolders.Count / 100)
     
-    foreach ($folder in $allObjBinFolders) {
-        $totalObjBinSize += Get-FolderSize -Path $folder.FullName
-        $processed++
-        if ($processed % 10 -eq 0) {
-            Show-Spinner "Calculating... $processed/$($allObjBinFolders.Count)"
+    for ($i = 0; $i -lt $allObjBinFolders.Count; $i++) {
+        $totalObjBinSize += Get-FolderSize -Path $allObjBinFolders[$i].FullName
+        
+        # Show progress every 100 folders
+        if (($i + 1) % 100 -eq 0) {
+            $percent = [math]::Round((($i + 1) / $allObjBinFolders.Count) * 100)
+            Write-Host "`r  Progress: $percent% ($($i + 1)/$($allObjBinFolders.Count))" -NoNewline -ForegroundColor DarkGray
         }
     }
     
-    Write-Host "`r  ✓ Total: $([math]::Round($totalObjBinSize, 2)) GB in $($allObjBinFolders.Count) folders                " -ForegroundColor Yellow
+    Write-Host "`r  Total size: $([math]::Round($totalObjBinSize, 2)) GB" + (" " * 30) -ForegroundColor Yellow
     $confirm = Read-Host "  Remove all? (y/N)"
     
     if ($confirm -eq 'y') {
@@ -105,26 +96,26 @@ if ($allObjBinFolders.Count -gt 0) {
         $failed = 0
         $total = $allObjBinFolders.Count
         
-        foreach ($folder in $allObjBinFolders) {
-            $current = $removed + $failed + 1
-            $percent = [math]::Round(($current / $total) * 100)
+        Write-Host "  Removing folders..." -ForegroundColor Yellow
+        for ($i = 0; $i -lt $total; $i++) {
+            $percent = [math]::Round((($i + 1) / $total) * 100)
             
             # Progress bar
-            $barLength = 30
+            $barLength = 40
             $filledLength = [math]::Round(($percent / 100) * $barLength)
             $bar = "█" * $filledLength + "░" * ($barLength - $filledLength)
             
-            Write-Host "`r  [$bar] $percent% ($current/$total)" -NoNewline -ForegroundColor Cyan
+            Write-Host "`r  [$bar] $percent% " -NoNewline -ForegroundColor Cyan
             
             try {
-                Remove-Item -Path $folder.FullName -Recurse -Force -ErrorAction Stop
+                Remove-Item -Path $allObjBinFolders[$i].FullName -Recurse -Force -ErrorAction Stop
                 $removed++
             } catch {
                 $failed++
             }
         }
         
-        Write-Host "`r  ✓ Removed $removed folders" + (" " * 50) -ForegroundColor Green
+        Write-Host "`r  ✓ Removed $removed folders" + (" " * 60) -ForegroundColor Green
         if ($failed -gt 0) {
             Write-Host "  ⚠ Skipped $failed folders (files in use)" -ForegroundColor Yellow
         }
@@ -155,33 +146,35 @@ if ($userTempSize -gt 0.1) {
     Write-Host "  User temp: $userTempSize GB" -ForegroundColor Yellow
     $confirm = Read-Host "  Remove? (y/N)"
     if ($confirm -eq 'y') {
-        Write-Host "  Collecting items..." -NoNewline -ForegroundColor Gray
+        Write-Host "  Collecting items..." -ForegroundColor Gray
         $items = @(Get-ChildItem -Path $env:TEMP -Force -ErrorAction SilentlyContinue)
-        Write-Host "`r  Found $($items.Count) items" -ForegroundColor Gray
+        Write-Host "  Found $($items.Count) items" -ForegroundColor Gray
         
         $removed = 0
         $failed = 0
         $total = $items.Count
         
-        foreach ($item in $items) {
-            $current = $removed + $failed + 1
-            $percent = [math]::Round(($current / $total) * 100)
-            
-            $barLength = 30
-            $filledLength = [math]::Round(($percent / 100) * $barLength)
-            $bar = "█" * $filledLength + "░" * ($barLength - $filledLength)
-            
-            Write-Host "`r  [$bar] $percent% ($current/$total)" -NoNewline -ForegroundColor Cyan
+        Write-Host "  Removing..." -ForegroundColor Yellow
+        for ($i = 0; $i -lt $total; $i++) {
+            # Show progress every 50 items
+            if ($i % 50 -eq 0 -or $i -eq $total - 1) {
+                $percent = [math]::Round((($i + 1) / $total) * 100)
+                $barLength = 40
+                $filledLength = [math]::Round(($percent / 100) * $barLength)
+                $bar = "█" * $filledLength + "░" * ($barLength - $filledLength)
+                
+                Write-Host "`r  [$bar] $percent% " -NoNewline -ForegroundColor Cyan
+            }
             
             try {
-                Remove-Item -Path $item.FullName -Recurse -Force -ErrorAction Stop
+                Remove-Item -Path $items[$i].FullName -Recurse -Force -ErrorAction Stop
                 $removed++
             } catch {
                 $failed++
             }
         }
         
-        Write-Host "`r  ✓ Removed $removed items" + (" " * 50) -ForegroundColor Green
+        Write-Host "`r  ✓ Removed $removed items" + (" " * 60) -ForegroundColor Green
         if ($failed -gt 0) {
             Write-Host "  ⚠ Skipped $failed items (in use)" -ForegroundColor Yellow
         }
