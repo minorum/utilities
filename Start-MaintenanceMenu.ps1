@@ -88,8 +88,10 @@ function Show-MainMenu {
     param($Config)
 
     Clear-Host
-    Format-SpectrePanel -Title "Windows Maintenance Scripts" -Color Cyan -Data "Select scripts to run and configure options"
-    Write-Host ""
+    Write-SpectreHost "`n[cyan bold]╔══════════════════════════════════════════════════════╗[/]"
+    Write-SpectreHost "[cyan bold]║[/]  [yellow bold]Windows Maintenance Scripts[/]                    [cyan bold]║[/]"
+    Write-SpectreHost "[cyan bold]╚══════════════════════════════════════════════════════╝[/]`n"
+    Write-SpectreHost "[dim]Select scripts to run and configure options[/]`n"
 
     $choices = @(
         "Select Scripts to Run"
@@ -98,34 +100,31 @@ function Show-MainMenu {
         "Exit"
     )
 
-    $selection = Read-SpectreSelection -Message "What would you like to do?" -Choices $choices -Color Cyan
+    $selection = Read-SpectreSelection -Message "What would you like to do?" -Choices $choices
     return $selection
 }
 
 function Select-Scripts {
     param($Config)
 
+    Write-SpectreHost "`n[cyan bold]Select Scripts to Run[/]`n"
+
     $scriptList = $Config.Keys | Sort-Object | ForEach-Object {
         $script = $Config[$_]
-        $status = if ($script.Enabled) { "[green]✓[/]" } else { "[red]✗[/]" }
+        $status = if ($script.Enabled) { "[green]✓[/]" } else { "[dim][ ][/]" }
         "$status $($script.Name) - $($script.Description)"
     }
 
-    # Get currently enabled scripts
-    $currentlyEnabled = $Config.Keys | Where-Object { $Config[$_].Enabled } | ForEach-Object {
-        $script = $Config[$_]
-        "$($script.Enabled ? '[green]✓[/]' : '[red]✗[/]') $($script.Name) - $($script.Description)"
-    }
+    $selected = Read-SpectreMultiSelection -Title "Use Space to toggle, Enter to confirm" -Choices $scriptList
 
-    $selected = Read-SpectreMultiSelection -Message "Select scripts to enable (Space to toggle, Enter to confirm)" `
-                                          -Choices $scriptList `
-                                          -Color Cyan
-
-    # Update enabled status
+    # Update enabled status based on selection
     foreach ($key in $Config.Keys) {
         $script = $Config[$key]
-        $displayText = "$($script.Enabled ? '[green]✓[/]' : '[red]✗[/]') $($script.Name) - $($script.Description)"
-        $Config[$key].Enabled = $selected -contains $displayText
+        # Check both enabled and disabled versions
+        $enabledText = "[green]✓[/] $($script.Name) - $($script.Description)"
+        $disabledText = "[dim][ ][/] $($script.Name) - $($script.Description)"
+
+        $Config[$key].Enabled = ($selected -contains $enabledText) -or ($selected -contains $disabledText)
     }
 }
 
@@ -138,8 +137,7 @@ function Configure-ScriptSteps {
     }
 
     $selectedScript = Read-SpectreSelection -Message "Which script would you like to configure?" `
-                                           -Choices ($scriptChoices + @("← Back")) `
-                                           -Color Cyan
+                                           -Choices ($scriptChoices + @("← Back"))
 
     if ($selectedScript -eq "← Back") { return }
 
@@ -150,8 +148,8 @@ function Configure-ScriptSteps {
     # Configure steps
     while ($true) {
         Clear-Host
-        Format-SpectrePanel -Title $script.Name -Color Cyan -Data $script.Description
-        Write-Host ""
+        Write-SpectreHost "`n[cyan bold]══ $($script.Name) ══[/]"
+        Write-SpectreHost "[dim]$($script.Description)[/]`n"
 
         $stepChoices = @(
             "Toggle Individual Steps"
@@ -165,31 +163,24 @@ function Configure-ScriptSteps {
             $stepChoices += "← Back"
         }
 
-        $action = Read-SpectreSelection -Message "Configure $($script.Name)" -Choices $stepChoices -Color Cyan
+        $action = Read-SpectreSelection -Message "Configure $($script.Name)" -Choices $stepChoices
 
         switch ($action) {
             "Toggle Individual Steps" {
                 $stepList = $script.Steps.Keys | ForEach-Object {
                     $step = $script.Steps[$_]
-                    $status = if ($step.Enabled) { "[green]✓[/]" } else { "[red]✗[/]" }
+                    $status = if ($step.Enabled) { "[green]✓[/]" } else { "[dim][ ][/]" }
                     "$status $($step.Name)"
                 }
 
-                # Get currently enabled steps
-                $currentlyEnabled = $script.Steps.Keys | Where-Object { $script.Steps[$_].Enabled } | ForEach-Object {
-                    $step = $script.Steps[$_]
-                    "[green]✓[/] $($step.Name)"
-                }
-
-                $selected = Read-SpectreMultiSelection -Message "Select steps to enable (Space to toggle)" `
-                                                      -Choices $stepList `
-                                                      -Color Green
+                $selected = Read-SpectreMultiSelection -Title "Select steps to enable (Space to toggle)" -Choices $stepList
 
                 # Update step status
                 foreach ($stepKey in $script.Steps.Keys) {
                     $step = $script.Steps[$stepKey]
-                    $displayText = "$($step.Enabled ? '[green]✓[/]' : '[red]✗[/]') $($step.Name)"
-                    $script.Steps[$stepKey].Enabled = $selected -contains $displayText
+                    $enabledText = "[green]✓[/] $($step.Name)"
+                    $disabledText = "[dim][ ][/] $($step.Name)"
+                    $script.Steps[$stepKey].Enabled = ($selected -contains $enabledText) -or ($selected -contains $disabledText)
                 }
             }
             "Enable All Steps" {
@@ -219,29 +210,31 @@ function Manage-ProjectDirectories {
 
     while ($true) {
         Clear-Host
-        Format-SpectrePanel -Title "Project Directories" -Color Cyan -Data "Directories to scan for build artifacts (obj/bin folders)"
-        Write-Host ""
+        Write-SpectreHost "`n[cyan bold]══ Project Directories ══[/]"
+        Write-SpectreHost "[dim]Directories to scan for build artifacts (obj/bin folders)[/]`n"
 
         # Show current directories
-        $table = @()
-        for ($i = 0; $i -lt $Script.ProjectDirs.Count; $i++) {
-            $dir = $Script.ProjectDirs[$i]
-            $exists = Test-Path $dir
-            $status = if ($exists) { "[green]✓ Exists[/]" } else { "[red]✗ Not Found[/]" }
-            $table += [PSCustomObject]@{
-                "#" = $i + 1
-                "Status" = $status
-                "Path" = $dir
+        if ($Script.ProjectDirs.Count -gt 0) {
+            $table = @()
+            for ($i = 0; $i -lt $Script.ProjectDirs.Count; $i++) {
+                $dir = $Script.ProjectDirs[$i]
+                $exists = Test-Path $dir
+                $status = if ($exists) { "[green]✓ Exists[/]" } else { "[red]✗ Not Found[/]" }
+                $table += [PSCustomObject]@{
+                    "#" = $i + 1
+                    "Status" = $status
+                    "Path" = $dir
+                }
             }
-        }
 
-        if ($table.Count -gt 0) {
-            $table | Format-SpectreTable -Color Cyan
+            $table | Format-SpectreTable
             Write-Host ""
+        } else {
+            Write-SpectreHost "[yellow]No directories configured[/]`n"
         }
 
         $choices = @("Add Directory", "Remove Directory", "← Back")
-        $action = Read-SpectreSelection -Message "Manage directories" -Choices $choices -Color Cyan
+        $action = Read-SpectreSelection -Message "Manage directories" -Choices $choices
 
         switch ($action) {
             "Add Directory" {
@@ -263,7 +256,7 @@ function Manage-ProjectDirectories {
                     }
                     $dirChoices += "← Cancel"
 
-                    $selected = Read-SpectreSelection -Message "Select directory to remove" -Choices $dirChoices -Color Yellow
+                    $selected = Read-SpectreSelection -Message "Select directory to remove" -Choices $dirChoices
 
                     if ($selected -ne "← Cancel") {
                         $index = [int]($selected -split '\.')[0] - 1
@@ -272,6 +265,9 @@ function Manage-ProjectDirectories {
                         Write-SpectreHost "[green]✓ Removed: $removed[/]"
                         Start-Sleep -Seconds 1
                     }
+                } else {
+                    Write-SpectreHost "[yellow]No directories to remove[/]"
+                    Start-Sleep -Seconds 1
                 }
             }
             "← Back" { return }
@@ -291,8 +287,8 @@ function Start-SelectedScripts {
     }
 
     Clear-Host
-    Format-SpectrePanel -Title "Ready to Execute" -Color Green -Data "The following scripts will run with your configuration"
-    Write-Host ""
+    Write-SpectreHost "`n[green bold]══ Ready to Execute ══[/]"
+    Write-SpectreHost "[dim]The following scripts will run with your configuration[/]`n"
 
     # Show what will run
     foreach ($key in $enabledScripts) {
@@ -314,8 +310,7 @@ function Start-SelectedScripts {
 
     # Run each script
     Clear-Host
-    Format-SpectrePanel -Title "Executing Maintenance Scripts" -Color Cyan
-    Write-Host ""
+    Write-SpectreHost "`n[cyan bold]══ Executing Maintenance Scripts ══[/]`n"
 
     foreach ($key in $enabledScripts) {
         switch ($key) {
@@ -327,8 +322,8 @@ function Start-SelectedScripts {
     }
 
     Write-Host ""
-    Format-SpectrePanel -Title "Completed" -Color Green -Data "All selected scripts have finished executing"
-    Write-Host ""
+    Write-SpectreHost "[green bold]══ Completed ══[/]"
+    Write-SpectreHost "[dim]All selected scripts have finished executing[/]`n"
     Read-Host "Press Enter to continue"
 }
 
@@ -388,7 +383,10 @@ function Invoke-SQLServerCleanup {
 # ========================= MAIN LOOP =========================
 
 Clear-Host
-Format-SpectrePanel -Title "Windows Maintenance Scripts" -Color Cyan -Data "Interactive TUI Menu powered by Spectre.Console"
+Write-SpectreHost "`n[cyan bold]╔══════════════════════════════════════════════════════╗[/]"
+Write-SpectreHost "[cyan bold]║[/]  [yellow bold]Windows Maintenance Scripts[/]                    [cyan bold]║[/]"
+Write-SpectreHost "[cyan bold]╚══════════════════════════════════════════════════════╝[/]"
+Write-SpectreHost "[dim]Interactive TUI Menu powered by Spectre.Console[/]`n"
 Start-Sleep -Seconds 1
 
 while ($true) {
@@ -406,7 +404,7 @@ while ($true) {
         }
         "Exit" {
             Clear-Host
-            Write-SpectreHost "[cyan]Goodbye![/]"
+            Write-SpectreHost "`n[cyan]Goodbye![/]`n"
             exit 0
         }
     }
