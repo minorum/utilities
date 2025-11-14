@@ -76,7 +76,6 @@ Manages installed .NET SDKs with intelligent recommendations for removal.
 - Identifies End-of-Life (EOL) versions (e.g., .NET 6, 7)
 - Detects LTS versions
 - Recommends keeping only the latest patch version per major
-- Uses winget to check for available updates
 - Interactive removal prompts
 
 **Usage:**
@@ -136,7 +135,7 @@ pwsh scripts/powershell/maintenance/cleanup-sql-server.ps1
 - **Docker/Rancher Desktop** - for cleanup-docker.ps1
 - **.NET SDK** - for cleanup-dotnet-sdks.ps1
 - **SQL Server** - for cleanup-sql-server.ps1
-- **winget** - used by cleanup-dotnet-sdks.ps1 for update checks
+- **winget** - used by cleanup-dotnet-sdks.ps1 for SDK removal
 
 ## Installation
 
