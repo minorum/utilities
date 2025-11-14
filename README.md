@@ -1,0 +1,299 @@
+# Utilities
+
+A collection of PowerShell maintenance scripts for cleaning up development environments and system resources on Windows.
+
+## Overview
+
+This repository contains automated cleanup scripts designed to help developers reclaim disk space by removing caches, old artifacts, and unused resources. All scripts are interactive, safe to run, and provide clear feedback about what they're doing.
+
+## Scripts
+
+### 🧹 Development Caches Cleanup
+**File:** `scripts/powershell/maintenance/cleanup-dev-caches.ps1`
+
+Removes development-related caches that can be safely regenerated on demand.
+
+**Cleans:**
+- NuGet global packages and HTTP cache
+- Build artifacts (obj/bin folders) from project directories
+- Visual Studio and Rider IDE caches
+- VSCode cached data
+- npm cache
+- Temporary files
+
+**Features:**
+- Interactive prompts before removing each category
+- Progress indicators for large operations
+- Size calculations to show potential space savings
+- Safe to run - everything cleaned will be restored on demand
+
+**Usage:**
+```powershell
+pwsh scripts/powershell/maintenance/cleanup-dev-caches.ps1
+```
+
+**Typical savings:** 5-50 GB depending on your development history
+
+---
+
+### 🐳 Docker Cleanup
+**File:** `scripts/powershell/maintenance/cleanup-docker.ps1`
+
+Cleans Docker resources and optimizes Rancher Desktop VHDX disk usage on WSL2.
+
+**Capabilities:**
+- Prunes Docker containers, images, and volumes
+- Shrinks Rancher Desktop ext4.vhdx file
+- Safely stops Rancher Desktop and WSL before disk operations
+- Shows before/after disk sizes
+
+**Features:**
+- Checks if Docker is running before attempting cleanup
+- Automatic WSL shutdown and verification
+- Uses diskpart for VHDX compaction
+- Error handling for all critical operations
+
+**Usage:**
+```powershell
+pwsh scripts/powershell/maintenance/cleanup-docker.ps1
+```
+
+**Requirements:**
+- Rancher Desktop (if shrinking VHDX)
+- Administrator privileges
+
+**Typical savings:** 5-100 GB from VHDX shrinking
+
+---
+
+### 🔧 .NET SDK Manager
+**File:** `scripts/powershell/maintenance/cleanup-dotnet-sdks.ps1`
+
+Manages installed .NET SDKs with intelligent recommendations for removal.
+
+**Features:**
+- Lists all installed .NET SDKs grouped by major version
+- Identifies End-of-Life (EOL) versions (e.g., .NET 6, 7)
+- Detects LTS versions
+- Recommends keeping only the latest patch version per major
+- Uses winget to check for available updates
+- Interactive removal prompts
+
+**Usage:**
+```powershell
+pwsh scripts/powershell/maintenance/cleanup-dotnet-sdks.ps1
+```
+
+**What it removes:**
+- EOL versions (.NET 6 ended Nov 2024, .NET 7 ended May 2024)
+- Older patch versions when you have multiple for the same major version
+
+**Typical savings:** 1-5 GB
+
+---
+
+### 🗄️ SQL Server Cleanup
+**File:** `scripts/powershell/maintenance/cleanup-sql-server.ps1`
+
+Cleans SQL Server backups, logs, and optimizes database transaction logs.
+
+**Capabilities:**
+- Removes old backup files (.bak) older than 30 days
+- Cleans trace files, dumps, and error logs
+- Shrinks bloated transaction log files
+- Shows detailed size information before/after operations
+- Auto-detects SQL Server instances
+
+**Features:**
+- Interactive confirmation before each operation
+- Identifies databases with excessive free space in log files
+- Calculates optimal target sizes for log shrinking
+- Supports multiple SQL Server versions and instances
+- Detailed progress reporting
+
+**Usage:**
+```powershell
+pwsh scripts/powershell/maintenance/cleanup-sql-server.ps1
+```
+
+**Requirements:**
+- SQL Server installed and running
+- Administrator privileges
+- sqlcmd utility (for transaction log operations)
+
+**Typical savings:** 1-50 GB depending on backup retention and log sizes
+
+---
+
+## Prerequisites
+
+### Required
+- **Windows** 10/11 or Windows Server
+- **PowerShell** 7+ (pwsh)
+- **Administrator privileges** - All scripts require elevation
+
+### Optional (per script)
+- **Docker/Rancher Desktop** - for cleanup-docker.ps1
+- **.NET SDK** - for cleanup-dotnet-sdks.ps1
+- **SQL Server** - for cleanup-sql-server.ps1
+- **winget** - used by cleanup-dotnet-sdks.ps1 for update checks
+
+## Installation
+
+1. Clone this repository:
+```bash
+git clone https://github.com/minorum/utilities.git
+cd utilities
+```
+
+2. Ensure you have PowerShell 7+:
+```powershell
+pwsh --version
+```
+
+If not installed, get it from: https://github.com/PowerShell/PowerShell
+
+## Usage
+
+All scripts are designed to run interactively with confirmations before destructive operations.
+
+### Running a Script
+
+```powershell
+# Navigate to repository
+cd utilities
+
+# Run any script
+pwsh scripts/powershell/maintenance/<script-name>.ps1
+```
+
+### Best Practices
+
+1. **Review what will be removed** - Scripts show size and details before removal
+2. **Run one at a time** - Some scripts may require system restarts
+3. **Close applications** - Close Visual Studio, Docker Desktop, etc. before running
+4. **Run regularly** - Monthly execution can prevent excessive buildup
+
+### Safety Notes
+
+All scripts are designed with safety in mind:
+- ✅ Interactive confirmations before destructive operations
+- ✅ Detailed logging of what's being removed
+- ✅ Only remove regenerable caches and old artifacts
+- ✅ Error handling prevents partial cleanup states
+- ✅ Size calculations help you make informed decisions
+
+**Nothing removed by these scripts is irreplaceable** - all caches, packages, and build artifacts will be regenerated when needed.
+
+## Examples
+
+### Quick Cleanup Routine
+
+Run these in order for a comprehensive cleanup:
+
+```powershell
+# 1. Clean development caches (usually the biggest)
+pwsh scripts/powershell/maintenance/cleanup-dev-caches.ps1
+
+# 2. Clean Docker (if you use it)
+pwsh scripts/powershell/maintenance/cleanup-docker.ps1
+
+# 3. Remove old .NET SDKs
+pwsh scripts/powershell/maintenance/cleanup-dotnet-sdks.ps1
+
+# 4. Clean SQL Server (if you use it)
+pwsh scripts/powershell/maintenance/cleanup-sql-server.ps1
+```
+
+Expected total savings: **10-200 GB** depending on your development history.
+
+## Configuration
+
+Scripts use sensible defaults, but you can modify behavior by editing the script files:
+
+| Script | Configurable Options | Default |
+|--------|---------------------|---------|
+| cleanup-dev-caches.ps1 | Project directories to scan | C:\projekty, %USERPROFILE%\source\repos, %USERPROFILE%\Projects |
+| cleanup-docker.ps1 | VHDX path | %LOCALAPPDATA%\rancher-desktop\distro-data\ext4.vhdx |
+| cleanup-sql-server.ps1 | Age threshold for old files | 30 days |
+| cleanup-sql-server.ps1 | Target log size | 100 MB or 120% of used space |
+
+## Troubleshooting
+
+### "Access Denied" Errors
+**Solution:** Ensure you're running PowerShell as Administrator
+
+### Script Won't Run
+**Solution:** You may need to adjust execution policy:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Docker Cleanup Fails
+**Solution:** Ensure Docker Desktop or Rancher Desktop is fully stopped before running
+
+### SQL Server Script Can't Find sqlcmd
+**Solution:** Install [SQL Server Command Line Utilities](https://learn.microsoft.com/en-us/sql/tools/sqlcmd-utility)
+
+### VHDX Shrink Doesn't Reduce Size
+**Solution:** The VHDX may already be optimally sized, or you need to run Docker cleanup first
+
+## Contributing
+
+Contributions are welcome! When adding new cleanup scripts:
+
+1. Follow the naming convention: `cleanup-<target>.ps1`
+2. Include interactive confirmations for destructive operations
+3. Provide clear user feedback with color-coded messages
+4. Use `try/catch` blocks for error handling
+5. Test in a safe environment first
+6. Update this README with documentation
+
+See [AGENTS.md](AGENTS.md) for detailed development guidelines.
+
+## Script Design Principles
+
+- **Idempotent** - Safe to run multiple times
+- **Interactive** - Ask before removing anything significant
+- **Informative** - Show sizes and details before/after
+- **Safe** - Only remove regenerable artifacts
+- **No Dependencies** - Use built-in PowerShell cmdlets when possible
+
+## Project Structure
+
+```
+utilities/
+├── README.md                                    # This file
+├── AGENTS.md                                    # Development guidelines for AI agents
+└── scripts/
+    └── powershell/
+        └── maintenance/
+            ├── cleanup-dev-caches.ps1          # Development caches cleanup
+            ├── cleanup-docker.ps1              # Docker and VHDX cleanup
+            ├── cleanup-dotnet-sdks.ps1         # .NET SDK management
+            └── cleanup-sql-server.ps1          # SQL Server cleanup
+```
+
+## Requirements Summary
+
+| Script | Requires Admin | External Tools | Approx. Execution Time |
+|--------|---------------|----------------|----------------------|
+| cleanup-dev-caches.ps1 | ✅ Yes | None | 2-10 minutes |
+| cleanup-docker.ps1 | ✅ Yes | Docker/Rancher, diskpart | 3-15 minutes |
+| cleanup-dotnet-sdks.ps1 | ✅ Yes | winget, dotnet CLI | 1-5 minutes |
+| cleanup-sql-server.ps1 | ✅ Yes | sqlcmd (optional) | 1-10 minutes |
+
+## License
+
+This project is open source and available for personal and commercial use.
+
+## Support
+
+For issues or questions:
+- Open an issue on GitHub
+- Check existing scripts for examples
+- Review [AGENTS.md](AGENTS.md) for development conventions
+
+---
+
+**Tip:** Add these scripts to Task Scheduler for automatic monthly cleanups, or create a wrapper script that runs all of them in sequence!

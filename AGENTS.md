@@ -44,13 +44,16 @@ This repository contains PowerShell scripts for system and development environme
 
 ## Notable Files
 
-- `scripts/powershell/maintenance/cleanup-dotnet-sdks.ps1`: Removes unused .NET SDKs.
-- `scripts/powershell/maintenance/cleanup-docker.ps1`: Cleans up Docker containers, images, and volumes.
+- `README.md`: User-facing documentation with comprehensive usage instructions, examples, and troubleshooting.
+- `scripts/powershell/maintenance/cleanup-dev-caches.ps1`: Removes NuGet packages, build artifacts, IDE caches, and temp files.
+- `scripts/powershell/maintenance/cleanup-docker.ps1`: Cleans up Docker containers, images, volumes, and shrinks Rancher Desktop VHDX.
+- `scripts/powershell/maintenance/cleanup-dotnet-sdks.ps1`: Manages and removes .NET SDKs with EOL detection.
+- `scripts/powershell/maintenance/cleanup-sql-server.ps1`: Cleans SQL Server backups, logs, and shrinks transaction logs.
 
 ## Additional Notes
 
 - No CI/CD or automated test integration is present.
-- No project-level README or agent-specific rules were found; this file serves as the primary onboarding guide for AI agents.
+- The `README.md` serves as user-facing documentation; this file (AGENTS.md) is for AI agent guidance.
 
 ---
 
